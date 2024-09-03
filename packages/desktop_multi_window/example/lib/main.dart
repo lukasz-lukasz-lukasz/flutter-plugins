@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
@@ -9,9 +10,7 @@ import 'package:flutter_multi_window_example/event_widget.dart';
 void main(List<String> args) {
   if (args.firstOrNull == 'multi_window') {
     final windowId = int.parse(args[1]);
-    final argument = args[2].isEmpty
-        ? const {}
-        : jsonDecode(args[2]) as Map<String, dynamic>;
+    final argument = args[2].isEmpty ? const {} : jsonDecode(args[2]) as Map<String, dynamic>;
     runApp(_ExampleSubWindow(
       windowController: WindowController.fromWindowId(windowId),
       args: argument,
@@ -40,8 +39,7 @@ class _ExampleMainWindowState extends State<_ExampleMainWindow> {
           children: [
             TextButton(
               onPressed: () async {
-                final window =
-                    await DesktopMultiWindow.createWindow(jsonEncode({
+                final window = await DesktopMultiWindow.createWindow(jsonEncode({
                   'args1': 'Sub window',
                   'args2': 100,
                   'args3': true,
@@ -56,10 +54,38 @@ class _ExampleMainWindowState extends State<_ExampleMainWindow> {
               child: const Text('Create a new World!'),
             ),
             TextButton(
+              onPressed: () async {
+                Timer.periodic(
+                  const Duration(milliseconds: 1500),
+                  (timer) async {
+                    final window = await DesktopMultiWindow.createWindow(jsonEncode({
+                      'args1': 'Sub window',
+                      'args2': 100,
+                      'args3': true,
+                      'business': 'business_test',
+                    }));
+                    window
+                      ..setFrame(const Offset(0, 0) & const Size(1280, 720))
+                      ..center()
+                      ..setTitle('Another window')
+                      ..show();
+                    print("created window: ${window.windowId}");
+                    Future.delayed(
+                      const Duration(milliseconds: 2500),
+                      () {
+                        print("closing window: ${window.windowId}");
+                        window.close();
+                      },
+                    );
+                  },
+                );
+              },
+              child: const Text('Create & close windows automatically'),
+            ),
+            TextButton(
               child: const Text('Send event to all sub windows'),
               onPressed: () async {
-                final subWindowIds =
-                    await DesktopMultiWindow.getAllSubWindowIds();
+                final subWindowIds = await DesktopMultiWindow.getAllSubWindowIds();
                 for (final windowId in subWindowIds) {
                   DesktopMultiWindow.invokeMethod(
                     windowId,
